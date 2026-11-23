@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>PATRI &amp; HOF | Gym Tracker</title>
+  <meta name="theme-color" content="#09090b" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PATRI &amp; HOF" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;700;800;900&display=swap');
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-banner {
+      font-family: 'Anton', Impact, sans-serif;
+      letter-spacing: 0.04em;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    // --- ICONOS SVG LIGEROS ---
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      const icons = {
+        home: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+        checkSquare: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+        trendingUp: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+        users: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+        chevronLeft: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+        chevronRight: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+        dumbbell: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6.5 6.5l11 11"/><path d="M21 21l-1-1"/><path d="M3 3l1 1"/><path d="M18 22l4-4"/><path d="M2 6l4-4"/><path d="M3 10l7-7"/><path d="M14 21l7-7"/></svg>,
+        userPlus: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
+        copy: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+        check: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+        flame: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
+        trophy: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>,
+        save: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      };
+      return icons[name] || null;
+    };
+
+    // --- ILUSTRACIÓN VISUAL POR EJERCICIO ---
+    const ExerciseVisual = ({ type }) => {
+      const renderArt = () => {
+        switch (type) {
+          case 'shoulder_press':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <rect x="48" y="45" width="8" height="32" rx="3" fill="#3f3f46" />
+                <rect x="35" y="72" width="34" height="5" rx="2" fill="#52525b" />
+                <circle cx="58" cy="34" r="7" fill="#FA8072" />
+                <path d="M58 41 L58 62 L74 62 L74 77" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" fill="none" />
+                <path d="M43 44 L43 24 M73 44 L73 24" stroke="#FA8072" strokeWidth="4" strokeLinecap="round" />
+                <rect x="35" y="19" width="16" height="6" rx="2" fill="#fff" />
+                <rect x="65" y="19" width="16" height="6" rx="2" fill="#fff" />
+              </svg>
+            );
+          case 'triceps_pushdown':
+          case 'triceps_overhead':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <rect x="25" y="10" width="6" height="72" fill="#3f3f46" />
+                <line x1="31" y1="15" x2="62" y2="35" stroke="#FA8072" strokeWidth="2" strokeDasharray="3 2" />
+                <circle cx="72" cy="28" r="7" fill="#FA8072" />
+                <path d="M72 35 L72 58 L72 78" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" />
+                <path d="M72 40 L58 48" stroke="#FA8072" strokeWidth="4.5" strokeLinecap="round" />
+                <rect x="52" y="46" width="12" height="4" rx="2" fill="#fff" />
+              </svg>
+            );
+          case 'lat_pulldown':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <line x1="60" y1="8" x2="60" y2="26" stroke="#FA8072" strokeWidth="2" />
+                <line x1="32" y1="26" x2="88" y2="26" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
+                <circle cx="60" cy="40" r="7" fill="#FA8072" />
+                <path d="M60 47 L60 68" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" />
+                <path d="M36 26 L48 48 L72 48 L84 26" stroke="#FA8072" strokeWidth="4" strokeLinecap="round" fill="none" />
+              </svg>
+            );
+          case 'hip_thrust':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <rect x="18" y="46" width="24" height="32" rx="4" fill="#3f3f46" />
+                <circle cx="38" cy="36" r="7" fill="#FA8072" />
+                <path d="M42 44 L72 44 L88 74" stroke="#f4f4f5" strokeWidth="6" strokeLinecap="round" fill="none" />
+                <circle cx="65" cy="40" r="11" fill="#FA8072" fillOpacity="0.35" stroke="#FA8072" strokeWidth="3" />
+              </svg>
+            );
+          case 'cardio':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <path d="M25 74 L95 66" stroke="#52525b" strokeWidth="6" strokeLinecap="round" />
+                <path d="M82 67 L88 30 L74 26" stroke="#3f3f46" strokeWidth="4" strokeLinecap="round" fill="none" />
+                <circle cx="56" cy="24" r="7" fill="#FA8072" />
+                <path d="M54 32 L48 50 L36 66 M48 50 L64 62" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" fill="none" />
+                <path d="M18 36 L32 36 M14 46 L26 46" stroke="#FA8072" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            );
+          case 'incline_chest':
+          case 'chest_machine':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <path d="M30 72 L68 42" stroke="#3f3f46" strokeWidth="7" strokeLinecap="round" />
+                <circle cx="72" cy="32" r="7" fill="#FA8072" />
+                <path d="M64 40 L44 58 L32 76" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" fill="none" />
+                <path d="M62 42 L62 18" stroke="#FA8072" strokeWidth="4.5" strokeLinecap="round" />
+                <rect x="52" y="14" width="20" height="6" rx="2" fill="#fff" />
+              </svg>
+            );
+          case 'leg_ext':
+          case 'leg_curl':
+          case 'adductor':
+          case 'hack_squat':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <rect x="34" y="34" width="8" height="42" rx="3" fill="#3f3f46" />
+                <rect x="34" y="54" width="32" height="7" rx="3" fill="#3f3f46" />
+                <circle cx="46" cy="24" r="7" fill="#FA8072" />
+                <path d="M46 32 L46 52 L74 52 L92 42" stroke="#f4f4f5" strokeWidth="5.5" strokeLinecap="round" fill="none" />
+                <circle cx="88" cy="48" r="5" fill="#FA8072" />
+              </svg>
+            );
+          case 'biceps':
+          case 'lateral_raise':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <circle cx="60" cy="22" r="7" fill="#FA8072" />
+                <path d="M60 30 L60 56 L52 80 M60 56 L68 80" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" fill="none" />
+                <path d="M46 34 L34 46 L48 38 M74 34 L86 46 L72 38" stroke="#FA8072" strokeWidth="4" strokeLinecap="round" fill="none" />
+                <circle cx="48" cy="36" r="4" fill="#fff" />
+                <circle cx="72" cy="36" r="4" fill="#fff" />
+              </svg>
+            );
+          case 'row':
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <rect x="22" y="64" width="76" height="6" rx="3" fill="#3f3f46" />
+                <circle cx="76" cy="32" r="7" fill="#FA8072" />
+                <path d="M74 40 L70 62 L36 62" stroke="#f4f4f5" strokeWidth="5" strokeLinecap="round" fill="none" />
+                <line x1="22" y1="48" x2="64" y2="48" stroke="#FA8072" strokeWidth="3" />
+                <rect x="58" y="42" width="5" height="12" rx="2" fill="#fff" />
+              </svg>
+            );
+          default:
+            return (
+              <svg viewBox="0 0 120 90" className="w-full h-full">
+                <line x1="25" y1="45" x2="95" y2="45" stroke="#FA8072" strokeWidth="5" strokeLinecap="round" />
+                <rect x="20" y="30" width="8" height="30" rx="2" fill="#fff" />
+                <rect x="92" y="30" width="8" height="30" rx="2" fill="#fff" />
+              </svg>
+            );
+        }
+      };
+
+      return (
+        <div className="w-20 h-20 rounded-xl bg-zinc-950/90 border border-zinc-800 flex items-center justify-center shrink-0 p-1.5 shadow-inner">
+          {renderArt()}
+        </div>
+      );
+    };
+
+    // --- MEMES MOTIVACIONALES DE GYM ---
+    const GYM_MEMES = [
+      {
+        quote: "NO PAIN, NO GAIN. HOY SE ENTRENA COMO SI TE DEBIERAN DINERO.",
+        tag: "MINDSET DIARIO",
+        sub: "Cada repetición cuenta cuando nadie mira.",
+        bg: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        quote: "LIGHT WEIGHT BABY! YEAH BUDDY!",
+        tag: "RONNIE COLEMAN ENERGY",
+        sub: "No es pesado si gritas antes de levantarlo.",
+        bg: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        quote: "SI NO PONES CARA DE FEO EN LA ÚLTIMA REPE, NO CUENTA.",
+        tag: "REGLA DE ORO DEL GYM",
+        sub: "Al fallo muscular o a casa.",
+        bg: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        quote: "BE THAT 1% QUE NO FALLA NI CUANDO LLUEVE.",
+        tag: "DISCIPLINA > MOTIVACIÓN",
+        sub: "Patri & Hof modo bestia activado.",
+        bg: "https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?auto=format&fit=crop&w=900&q=80"
+      },
+      {
+        quote: "EL DÍA DE PIERNA NO SE NEGOCIA, SE SOBREVIVE.",
+        tag: "LEG DAY SURVIVOR",
+        sub: "Mañana bajamos las escaleras de lado.",
+        bg: "https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=900&q=80"
+      }
+    ];
+
+    // --- DATOS DE RUTINAS EXACTAS ---
+    const PATRI_ROUTINES = [
+      {
+        day: "RUTINA 1",
+        exercises: [
+          { id: "p_r1_1", name: "Banco recto con mancuernas (hombro)", muscle: "Hombro", sets: "3 series · 8-10 reps", unit: "kg", visual: "shoulder_press" },
+          { id: "p_r1_2", name: "Polea alta para tríceps", muscle: "Tríceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "triceps_pushdown" },
+          { id: "p_r1_3", name: "Polea al pecho (espalda)", muscle: "Espalda", sets: "3 series · 8-10 reps", unit: "kg", visual: "lat_pulldown" },
+          { id: "p_r1_4", name: "Hip thrust (glúteo)", muscle: "Glúteo", sets: "3 series · 8-10 reps", unit: "kg", visual: "hip_thrust" },
+          { id: "p_r1_5", name: "Cardio en máquina", muscle: "Cardio / Resistencia", sets: "Sesión final", unit: "min", visual: "cardio" }
+        ]
+      },
+      {
+        day: "RUTINA 2",
+        exercises: [
+          { id: "p_r2_1", name: "Banco inclinado (pecho)", muscle: "Pecho superior", sets: "3 series · 8-10 reps", unit: "kg", visual: "incline_chest" },
+          { id: "p_r2_2", name: "Máquina de cuádriceps extensiones", muscle: "Cuádriceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "leg_ext" },
+          { id: "p_r2_3", name: "Máquina de isquios (pierna) sentada", muscle: "Isquiotibiales", sets: "3 series · 8-10 reps", unit: "kg", visual: "leg_curl" },
+          { id: "p_r2_4", name: "Bíceps martillo con mancuerna (braquial)", muscle: "Braquial / Bíceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "biceps" },
+          { id: "p_r2_5", name: "Bíceps con mancuerna normal", muscle: "Bíceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "biceps" }
+        ]
+      }
+    ];
+
+    const HOF_ROUTINES = [
+      {
+        day: "DÍA DE PECHO",
+        exercises: [
+          { id: "h_p_1", name: "Aperturas en máquina", muscle: "Pecho", sets: "3 series · 8-10 reps", unit: "kg", visual: "chest_machine" },
+          { id: "h_p_2", name: "Máquina inclinada para pecho superior", muscle: "Pecho superior", sets: "3 series · 8-10 reps", unit: "kg", visual: "incline_chest" },
+          { id: "h_p_3", name: "Poleas altas para pecho inferior", muscle: "Pecho inferior", sets: "3 series · 8-10 reps", unit: "kg", visual: "chest_machine" },
+          { id: "h_p_4", name: "Poleas bajas para pecho superior", muscle: "Pecho superior", sets: "3 series · 8-10 reps", unit: "kg", visual: "incline_chest" },
+          { id: "h_p_5", name: "Empuje en máquina sentado recto", muscle: "Pecho medio", sets: "3 series · 8-10 reps", unit: "kg", visual: "chest_machine" }
+        ]
+      },
+      {
+        day: "DÍA DE ESPALDA",
+        exercises: [
+          { id: "h_e_1", name: "Polea alta al pecho", muscle: "Dorsal ancho", sets: "3 series · 8-10 reps", unit: "kg", visual: "lat_pulldown" },
+          { id: "h_e_2", name: "Remo en máquina", muscle: "Espalda media", sets: "3 series · 8-10 reps", unit: "kg", visual: "row" },
+          { id: "h_e_3", name: "Dorsal en polea alta", muscle: "Dorsal", sets: "3 series · 8-10 reps", unit: "kg", visual: "lat_pulldown" },
+          { id: "h_e_4", name: "Dorsal en remo", muscle: "Dorsal / Espalda baja", sets: "3 series · 8-10 reps", unit: "kg", visual: "row" }
+        ]
+      },
+      {
+        day: "DÍA DE BRAZO",
+        exercises: [
+          { id: "h_b_1", name: "Polea alta con agarre en V para tríceps", muscle: "Tríceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "triceps_pushdown" },
+          { id: "h_b_2", name: "Polea baja agarre recto para bíceps", muscle: "Bíceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "biceps" },
+          { id: "h_b_3", name: "Elevaciones laterales hombro", muscle: "Deltoides lateral", sets: "3 series · 8-10 reps", unit: "kg", visual: "lateral_raise" },
+          { id: "h_b_4", name: "Tríceps tras nuca", muscle: "Tríceps cabeza larga", sets: "3 series · 8-10 reps", unit: "kg", visual: "triceps_overhead" },
+          { id: "h_b_5", name: "Martillo con mancuernas para braquial", muscle: "Braquial / Antebrazo", sets: "3 series · 8-10 reps", unit: "kg", visual: "biceps" }
+        ]
+      },
+      {
+        day: "DÍA DE PIERNA",
+        exercises: [
+          { id: "h_l_1", name: "Máquina cuádriceps", muscle: "Cuádriceps", sets: "3 series · 8-10 reps", unit: "kg", visual: "leg_ext" },
+          { id: "h_l_2", name: "Máquina isquios", muscle: "Isquiotibiales", sets: "3 series · 8-10 reps", unit: "kg", visual: "leg_curl" },
+          { id: "h_l_3", name: "Jaca", muscle: "Cuádriceps / Glúteo", sets: "3 series · 8-10 reps", unit: "kg", visual: "hack_squat" },
+          { id: "h_l_4", name: "Aductores", muscle: "Aductores", sets: "3 series · 8-10 reps", unit: "kg", visual: "adductor" }
+        ]
+      }
+    ];
+
+    const ALL_EXERCISES = [
+      ...PATRI_ROUTINES.flatMap(r => r.exercises.map(e => ({ ...e, owner: "Patri", dayLabel: r.day }))),
+      ...HOF_ROUTINES.flatMap(r => r.exercises.map(e => ({ ...e, owner: "Hof", dayLabel: r.day })))
+    ];
+
+    const INITIAL_LOGS = {
+      Patri: {
+        p_r1_1: [{ month: "Sep", weight: 6 }, { month: "Oct", weight: 7.5 }, { month: "Nov", weight: 8 }],
+        p_r1_2: [{ month: "Sep", weight: 15 }, { month: "Oct", weight: 17.5 }, { month: "Nov", weight: 20 }],
+        p_r1_3: [{ month: "Sep", weight: 25 }, { month: "Oct", weight: 30 }, { month: "Nov", weight: 35 }],
+        p_r1_4: [{ month: "Sep", weight: 40 }, { month: "Oct", weight: 55 }, { month: "Nov", weight: 65 }],
+        p_r1_5: [{ month: "Sep", weight: 15 }, { month: "Oct", weight: 20 }, { month: "Nov", weight: 25 }],
+        p_r2_1: [{ month: "Sep", weight: 6 }, { month: "Oct", weight: 8 }, { month: "Nov", weight: 10 }],
+        p_r2_2: [{ month: "Sep", weight: 25 }, { month: "Oct", weight: 30 }, { month: "Nov", weight: 35 }],
+        p_r2_3: [{ month: "Sep", weight: 20 }, { month: "Oct", weight: 25 }, { month: "Nov", weight: 30 }],
+        p_r2_4: [{ month: "Sep", weight: 5 }, { month: "Oct", weight: 6 }, { month: "Nov", weight: 7.5 }],
+        p_r2_5: [{ month: "Sep", weight: 5 }, { month: "Oct", weight: 6 }, { month: "Nov", weight: 7 }]
+      },
+      Hof: {
+        h_p_1: [{ month: "Sep", weight: 45 }, { month: "Oct", weight: 50 }, { month: "Nov", weight: 55 }],
+        h_p_2: [{ month: "Sep", weight: 50 }, { month: "Oct", weight: 60 }, { month: "Nov", weight: 65 }],
+        h_p_3: [{ month: "Sep", weight: 20 }, { month: "Oct", weight: 25 }, { month: "Nov", weight: 27.5 }],
+        h_p_4: [{ month: "Sep", weight: 15 }, { month: "Oct", weight: 17.5 }, { month: "Nov", weight: 20 }],
+        h_p_5: [{ month: "Sep", weight: 55 }, { month: "Oct", weight: 65 }, { month: "Nov", weight: 70 }],
+        h_e_1: [{ month: "Sep", weight: 55 }, { month: "Oct", weight: 60 }, { month: "Nov", weight: 65 }],
+        h_e_2: [{ month: "Sep", weight: 50 }, { month: "Oct", weight: 55 }, { month: "Nov", weight: 60 }],
+        h_e_3: [{ month: "Sep", weight: 45 }, { month: "Oct", weight: 50 }, { month: "Nov", weight: 55 }],
+        h_e_4: [{ month: "Sep", weight: 45 }, { month: "Oct", weight: 50 }, { month: "Nov", weight: 55 }],
+        h_b_1: [{ month: "Sep", weight: 25 }, { month: "Oct", weight: 30 }, { month: "Nov", weight: 32.5 }],
+        h_b_2: [{ month: "Sep", weight: 20 }, { month: "Oct", weight: 25 }, { month: "Nov", weight: 27.5 }],
+        h_b_3: [{ month: "Sep", weight: 10 }, { month: "Oct", weight: 12 }, { month: "Nov", weight: 14 }],
+        h_b_4: [{ month: "Sep", weight: 17.5 }, { month: "Oct", weight: 20 }, { month: "Nov", weight: 22.5 }],
+        h_b_5: [{ month: "Sep", weight: 12 }, { month: "Oct", weight: 14 }, { month: "Nov", weight: 16 }],
+        h_l_1: [{ month: "Sep", weight: 60 }, { month: "Oct", weight: 70 }, { month: "Nov", weight: 75 }],
+        h_l_2: [{ month: "Sep", weight: 45 }, { month: "Oct", weight: 50 }, { month: "Nov", weight: 55 }],
+        h_l_3: [{ month: "Sep", weight: 80 }, { month: "Oct", weight: 95 }, { month: "Nov", weight: 110 }],
+        h_l_4: [{ month: "Sep", weight: 50 }, { month: "Oct", weight: 60 }, { month: "Nov", weight: 65 }]
+      }
+    };
+
+    const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+    // --- GRÁFICA SVG LIMPIA ---
+    const ProgressChart = ({ seriesList, unit = "kg" }) => {
+      const allPoints = seriesList.flatMap(s => s.data);
+      if (allPoints.length === 0) {
+        return <div className="h-32 flex items-center justify-center text-xs text-zinc-500">Sin datos registrados aún</div>;
+      }
+      const maxVal = Math.max(...allPoints.map(d => d.weight), 10) * 1.15;
+      const minVal = Math.max(0, Math.min(...allPoints.map(d => d.weight)) * 0.75);
+      const range = Math.max(maxVal - minVal, 5);
+
+      const width = 300;
+      const height = 115;
+      const padX = 24;
+      const padY = 18;
+
+      const labels = Array.from(new Set(allPoints.map(d => d.month)));
+
+      return (
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32 overflow-visible">
+          {[0, 0.5, 1].map((t, i) => {
+            const y = padY + t * (height - padY * 2);
+            return <line key={i} x1={padX} y1={y} x2={width - padX} y2={y} stroke="#27272a" strokeDasharray="3 3" strokeWidth="1" />;
+          })}
+
+          {seriesList.map((serie, sIdx) => {
+            if (!serie.data || serie.data.length === 0) return null;
+            const coords = serie.data.map((pt, idx) => {
+              const xIndex = labels.indexOf(pt.month);
+              const x = labels.length === 1
+                ? width / 2
+                : padX + (xIndex / (labels.length - 1)) * (width - padX * 2);
+              const y = height - padY - ((pt.weight - minVal) / range) * (height - padY * 2);
+              return { x, y, weight: pt.weight, month: pt.month };
+            });
+
+            const poly = coords.map(c => `${c.x},${c.y}`).join(" ");
+            return (
+              <g key={sIdx}>
+                {coords.length > 1 && (
+                  <polyline fill="none" stroke={serie.color} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" points={poly} />
+                )}
+                {coords.map((c, idx) => (
+                  <g key={idx}>
+                    <circle cx={c.x} cy={c.y} r="4" fill="#09090b" stroke={serie.color} strokeWidth="2.5" />
+                    <text x={c.x} y={c.y - 8} textAnchor="middle" fill={serie.color} fontSize="9.5" fontWeight="800">
+                      {c.weight}{unit}
+                    </text>
+                  </g>
+                ))}
+              </g>
+            );
+          })}
+
+          {labels.map((lbl, i) => {
+            const x = labels.length === 1 ? width / 2 : padX + (i / (labels.length - 1)) * (width - padX * 2);
+            return (
+              <text key={lbl} x={x} y={height - 2} textAnchor="middle" fill="#a1a1aa" fontSize="9.5" fontWeight="600">
+                {lbl}
+              </text>
+            );
+          })}
+        </svg>
+      );
+    };
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("inicio");
+      const [users, setUsers] = useState(() => {
+        const saved = localStorage.getItem("ph_users_v2");
+        return saved ? JSON.parse(saved) : ["Patri", "Hof"];
+      });
+      const [currentUser, setCurrentUser] = useState(() => localStorage.getItem("ph_current_user_v2") || "Hof");
+      const [logs, setLogs] = useState(() => {
+        const saved = localStorage.getItem("ph_logs_v2");
+        return saved ? JSON.parse(saved) : INITIAL_LOGS;
+      });
+
+      const [memeIdx, setMemeIdx] = useState(() => new Date().getDate() % GYM_MEMES.length);
+      const [newAccountName, setNewAccountName] = useState("");
+      const [hoyOwner, setHoyOwner] = useState("Patri");
+      const [selectedDayIdx, setSelectedDayIdx] = useState(0);
+      const [weightInputs, setWeightInputs] = useState({});
+      const [savedToast, setSavedToast] = useState("");
+      const [progressFilter, setProgressFilter] = useState("all");
+      const [groupCodeInput, setGroupCodeInput] = useState("");
+      const [copiedCode, setCopiedCode] = useState(false);
+
+      const GROUP_CODE = "PH-GYM-2026";
+
+      useEffect(() => { localStorage.setItem("ph_users_v2", JSON.stringify(users)); }, [users]);
+      useEffect(() => { localStorage.setItem("ph_current_user_v2", currentUser); }, [currentUser]);
+      useEffect(() => { localStorage.setItem("ph_logs_v2", JSON.stringify(logs)); }, [logs]);
+
+      const currentMonth = MONTHS[new Date().getMonth()];
+
+      const handleCreateAccount = (e) => {
+        e.preventDefault();
+        const clean = newAccountName.trim();
+        if (!clean) return;
+        if (!users.includes(clean)) {
+          setUsers([...users, clean]);
+          setLogs(prev => ({ ...prev, [clean]: {} }));
+        }
+        setCurrentUser(clean);
+        setNewAccountName("");
+      };
+
+      const handleSaveWeight = (exerciseId) => {
+        const raw = weightInputs[exerciseId];
+        const val = parseFloat(raw);
+        if (isNaN(val) || val <= 0) return;
+
+        setLogs(prev => {
+          const userLogs = prev[currentUser] || {};
+          const exHistory = [...(userLogs[exerciseId] || [])];
+          const existingMonthIdx = exHistory.findIndex(item => item.month === currentMonth);
+          if (existingMonthIdx >= 0) {
+            exHistory[existingMonthIdx] = { month: currentMonth, weight: val };
+          } else {
+            exHistory.push({ month: currentMonth, weight: val });
+          }
+          return {
+            ...prev,
+            [currentUser]: {
+              ...userLogs,
+              [exerciseId]: exHistory
+            }
+          };
+        });
+
+        setWeightInputs(prev => ({ ...prev, [exerciseId]: "" }));
+        setSavedToast(exerciseId);
+        setTimeout(() => setSavedToast(""), 1800);
+      };
+
+      // Resumen de progresos para Inicio
+      const summaryStats = useMemo(() => {
+        const userLogs = logs[currentUser] || {};
+        let totalGain = 0;
+        let maxLift = { name: "—", weight: 0, unit: "kg" };
+        const improvements = [];
+
+        ALL_EXERCISES.forEach(ex => {
+          const hist = userLogs[ex.id];
+          if (hist && hist.length > 0) {
+            const last = hist[hist.length - 1].weight;
+            const first = hist[0].weight;
+            const diff = +(last - first).toFixed(1);
+            if (ex.unit === "kg") {
+              totalGain += Math.max(0, diff);
+              if (last > maxLift.weight) {
+                maxLift = { name: ex.name, weight: last, unit: ex.unit };
+              }
+            }
+            if (diff > 0) {
+              improvements.push({ name: ex.name, diff, unit: ex.unit, current: last });
+            }
+          }
+        });
+
+        improvements.sort((a, b) => b.diff - a.diff);
+        return { totalGain: +totalGain.toFixed(1), maxLift, topImprovements: improvements.slice(0, 3) };
+      }, [logs, currentUser]);
+
+      const activeRoutines = hoyOwner === "Patri" ? PATRI_ROUTINES : HOF_ROUTINES;
+      const safeDayIdx = selectedDayIdx < activeRoutines.length ? selectedDayIdx : 0;
+      const currentRoutineDay = activeRoutines[safeDayIdx];
+
+      const filteredExercises = ALL_EXERCISES.filter(ex => {
+        if (progressFilter === "Patri") return ex.owner === "Patri";
+        if (progressFilter === "Hof") return ex.owner === "Hof";
+        return true;
+      });
+
+      const userColors = ["#FA8072", "#38bdf8", "#a78bfa", "#34d399", "#fbbf24"];
+
+      return (
+        <div className="min-h-screen bg-zinc-950 text-zinc-100 relative selection:bg-[#FA8072] selection:text-zinc-950">
+          {/* Fondo de gimnasio sutil en todas las pantallas */}
+          <div
+            className="fixed inset-0 bg-cover bg-center opacity-15 pointer-events-none"
+            style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1400&q=80')" }}
+          />
+          <div className="fixed inset-0 bg-gradient-to-b from-zinc-950/80 via-zinc-950/90 to-zinc-950 pointer-events-none" />
+
+          <div className="relative z-10 max-w-md mx-auto min-h-screen flex flex-col">
+            {/* CABECERA FIJA CON NOMBRE EN ROSA SALMÓN */}
+            <header className="sticky top-0 z-30 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80 pt-3">
+              <div className="px-4 pb-2 flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
+                  Perfil: <strong className="text-[#FA8072]">{currentUser}</strong>
+                </span>
+                <h1 className="font-banner text-3xl sm:text-4xl tracking-wider text-[#FA8072] drop-shadow-[0_2px_10px_rgba(250,128,114,0.35)]">
+                  PATRI &amp; HOF
+                </h1>
+                <span className="text-[11px] font-semibold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-full">
+                  {currentMonth}
+                </span>
+              </div>
+
+              {/* BARRA DE NAVEGACIÓN SUPERIOR */}
+              <nav className="grid grid-cols-4 border-t border-zinc-900">
+                {[
+                  { id: "inicio", label: "Inicio", icon: "home" },
+                  { id: "hoy", label: "Hoy", icon: "checkSquare" },
+                  { id: "progreso", label: "Progreso", icon: "trendingUp" },
+                  { id: "grupo", label: "Grupo", icon: "users" }
+                ].map(tab => {
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex flex-col items-center justify-center py-2.5 gap-1 border-b-2 transition-all ${
+                        active
+                          ? "border-[#FA8072] text-[#FA8072] bg-[#FA8072]/5"
+                          : "border-transparent text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      <Icon name={tab.icon} className="w-4 h-4" />
+                      <span className="text-[11px] font-bold tracking-wide">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </header>
+
+            {/* CONTENIDO DE LAS 4 PANTALLAS */}
+            <main className="flex-1 p-4 pb-10 space-y-5">
+
+              {/* ==================== 1. INICIO ==================== */}
+              {activeTab === "inicio" && (
+                <>
+                  {/* Tarjeta Motivacional / Meme de Gym */}
+                  <div className="relative rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-900">
+                    <img
+                      src={GYM_MEMES[memeIdx].bg}
+                      alt="Motivación Gym"
+                      className="w-full h-64 object-cover brightness-50"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent p-5 flex flex-col justify-between">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2.5 py-1 rounded-full bg-[#FA8072] text-zinc-950 text-[10px] font-black uppercase tracking-wider">
+                          {GYM_MEMES[memeIdx].tag}
+                        </span>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => setMemeIdx((memeIdx - 1 + GYM_MEMES.length) % GYM_MEMES.length)}
+                            className="p-1.5 rounded-full bg-zinc-950/70 border border-zinc-700 text-white hover:border-[#FA8072]"
+                          >
+                            <Icon name="chevronLeft" className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setMemeIdx((memeIdx + 1) % GYM_MEMES.length)}
+                            className="p-1.5 rounded-full bg-zinc-950/70 border border-zinc-700 text-white hover:border-[#FA8072]"
+                          >
+                            <Icon name="chevronRight" className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="font-banner text-2xl sm:text-3xl leading-tight text-white drop-shadow">
+                          "{GYM_MEMES[memeIdx].quote}"
+                        </p>
+                        <p className="text-xs text-[#FA8072] font-semibold mt-1.5">
+                          {GYM_MEMES[memeIdx].sub}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selector y Creación de Cuenta */}
+                  <section className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-extrabold uppercase tracking-wider text-zinc-200 flex items-center gap-2">
+                        <Icon name="userPlus" className="w-4 h-4 text-[#FA8072]" />
+                        Cuentas de la App
+                      </h2>
+                      <span className="text-[11px] text-zinc-400">Toca para cambiar</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {users.map(u => {
+                        const isSelected = u === currentUser;
+                        return (
+                          <button
+                            key={u}
+                            onClick={() => {
+                              setCurrentUser(u);
+                              if (u === "Patri" || u === "Hof") setHoyOwner(u);
+                            }}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all border ${
+                              isSelected
+                                ? "bg-[#FA8072] text-zinc-950 border-[#FA8072] shadow-lg shadow-[#FA8072]/20"
+                                : "bg-zinc-950 text-zinc-300 border-zinc-800 hover:border-zinc-600"
+                            }`}
+                          >
+                            {u}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <form onSubmit={handleCreateAccount} className="flex gap-2 pt-1">
+                      <input
+                        type="text"
+                        placeholder="Crear cuenta (ej. Carlos, Ana...)"
+                        value={newAccountName}
+                        onChange={(e) => setNewAccountName(e.target.value)}
+                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FA8072]"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-[#FA8072] hover:text-zinc-950 text-xs font-bold transition-colors"
+                      >
+                        Entrar
+                      </button>
+                    </form>
+                  </section>
+
+                  {/* Mini Resumen de Progresos */}
+                  <section className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-extrabold uppercase tracking-wider text-zinc-200 flex items-center gap-2">
+                        <Icon name="trophy" className="w-4 h-4 text-[#FA8072]" />
+                        Mini Resumen · {currentUser}
+                      </h2>
+                      <button
+                        onClick={() => setActiveTab("progreso")}
+                        className="text-[11px] font-bold text-[#FA8072] hover:underline"
+                      >
+                        Ver gráficas →
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="bg-zinc-950/90 border border-zinc-800/90 rounded-xl p-3">
+                        <p className="text-[10px] uppercase font-bold text-zinc-400">Kilos ganados</p>
+                        <p className="text-xl font-black text-[#FA8072] mt-0.5">+{summaryStats.totalGain} kg</p>
+                      </div>
+                      <div className="bg-zinc-950/90 border border-zinc-800/90 rounded-xl p-3">
+                        <p className="text-[10px] uppercase font-bold text-zinc-400">Récord máximo</p>
+                        <p className="text-xl font-black text-white mt-0.5">{summaryStats.maxLift.weight} kg</p>
+                        <p className="text-[10px] text-zinc-400 truncate">{summaryStats.maxLift.name}</p>
+                      </div>
+                    </div>
+
+                    {summaryStats.topImprovements.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <p className="text-[11px] font-bold text-zinc-400">Mayores subidas:</p>
+                        {summaryStats.topImprovements.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs bg-zinc-950/70 px-3 py-2 rounded-lg border border-zinc-800/60">
+                            <span className="text-zinc-200 truncate pr-2">{item.name}</span>
+                            <span className="font-extrabold text-emerald-400 shrink-0">+{item.diff} {item.unit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </>
+              )}
+
+              {/* ==================== 2. HOY ==================== */}
+              {activeTab === "hoy" && (
+                <>
+                  {/* Selector Rutina de Patri vs Rutina de Hof */}
+                  <div className="grid grid-cols-2 gap-2.5 bg-zinc-900/90 p-1.5 rounded-2xl border border-zinc-800">
+                    <button
+                      onClick={() => { setHoyOwner("Patri"); setSelectedDayIdx(0); }}
+                      className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                        hoyOwner === "Patri"
+                          ? "bg-[#FA8072] text-zinc-950 shadow-md"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      Ejercicios Patri
+                    </button>
+                    <button
+                      onClick={() => { setHoyOwner("Hof"); setSelectedDayIdx(0); }}
+                      className={`py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                        hoyOwner === "Hof"
+                          ? "bg-[#FA8072] text-zinc-950 shadow-md"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      Ejercicios Hof
+                    </button>
+                  </div>
+
+                  {/* Selector de Días */}
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {activeRoutines.map((r, idx) => (
+                      <button
+                        key={r.day}
+                        onClick={() => setSelectedDayIdx(idx)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap border transition-all ${
+                          safeDayIdx === idx
+                            ? "bg-zinc-100 text-zinc-950 border-white"
+                            : "bg-zinc-900/90 text-zinc-400 border-zinc-800 hover:border-zinc-600"
+                        }`}
+                      >
+                        {r.day}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Listado de Ejercicios del Día */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between px-1">
+                      <h2 className="text-sm font-black uppercase tracking-wider text-[#FA8072]">
+                        {currentRoutineDay.day} · {hoyOwner}
+                      </h2>
+                      <span className="text-[11px] text-zinc-400">
+                        Apuntando como <strong className="text-white">{currentUser}</strong>
+                      </span>
+                    </div>
+
+                    {currentRoutineDay.exercises.map((ex, index) => {
+                      const userHist = (logs[currentUser] && logs[currentUser][ex.id]) || [];
+                      const lastRecord = userHist.length > 0 ? userHist[userHist.length - 1] : null;
+                      const isSaved = savedToast === ex.id;
+
+                      return (
+                        <div
+                          key={ex.id}
+                          className="bg-zinc-900/85 backdrop-blur border border-zinc-800 rounded-2xl p-3.5 flex gap-3.5 items-center shadow-lg"
+                        >
+                          <ExerciseVisual type={ex.visual} />
+
+                          <div className="flex-1 min-w-0 space-y-1.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="text-sm font-extrabold text-white leading-snug">
+                                <span className="text-[#FA8072] mr-1.5">{index + 1}.</span>
+                                {ex.name}
+                              </h3>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <span className="px-2 py-0.5 rounded-md bg-zinc-950 border border-zinc-800 text-zinc-300 font-semibold">
+                                {ex.sets}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md bg-[#FA8072]/15 text-[#FA8072] font-bold">
+                                {ex.muscle}
+                              </span>
+                            </div>
+
+                            {/* Input rápido para apuntar peso de hoy */}
+                            <div className="pt-1 flex items-center gap-2">
+                              <input
+                                type="number"
+                                step="0.5"
+                                placeholder={lastRecord ? `Último: ${lastRecord.weight} ${ex.unit}` : `Peso (${ex.unit})`}
+                                value={weightInputs[ex.id] || ""}
+                                onChange={(e) => setWeightInputs({ ...weightInputs, [ex.id]: e.target.value })}
+                                className="w-28 bg-zinc-950 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FA8072]"
+                              />
+                              <button
+                                onClick={() => handleSaveWeight(ex.id)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1 transition-all ${
+                                  isSaved
+                                    ? "bg-emerald-500 text-zinc-950"
+                                    : "bg-[#FA8072] text-zinc-950 hover:brightness-110"
+                                }`}
+                              >
+                                <Icon name={isSaved ? "check" : "save"} className="w-3.5 h-3.5" />
+                                {isSaved ? "Guardado" : "Guardar"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* ==================== 3. PROGRESO ==================== */}
+              {activeTab === "progreso" && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-base font-black uppercase tracking-wider text-white">
+                        Progreso de {currentUser}
+                      </h2>
+                      <p className="text-xs text-zinc-400">Evolución mensual por ejercicio</p>
+                    </div>
+                    <div className="flex gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+                      {[
+                        { id: "all", label: "Todos" },
+                        { id: "Patri", label: "Patri" },
+                        { id: "Hof", label: "Hof" }
+                      ].map(f => (
+                        <button
+                          key={f.id}
+                          onClick={() => setProgressFilter(f.id)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
+                            progressFilter === f.id ? "bg-[#FA8072] text-zinc-950" : "text-zinc-400"
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {filteredExercises.map(ex => {
+                      const data = (logs[currentUser] && logs[currentUser][ex.id]) || [];
+                      const lastVal = data.length > 0 ? data[data.length - 1].weight : 0;
+
+                      return (
+                        <div key={ex.id} className="bg-zinc-900/85 border border-zinc-800 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-[#FA8072]">
+                                {ex.owner} · {ex.dayLabel}
+                              </span>
+                              <h3 className="text-sm font-extrabold text-white">{ex.name}</h3>
+                            </div>
+                            <span className="px-2.5 py-1 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-black text-[#FA8072] shrink-0">
+                              {lastVal > 0 ? `${lastVal} ${ex.unit}` : "Sin marca"}
+                            </span>
+                          </div>
+
+                          <ProgressChart seriesList={[{ data, color: "#FA8072" }]} unit={ex.unit} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* ==================== 4. GRUPO ==================== */}
+              {activeTab === "grupo" && (
+                <>
+                  {/* Código de Invitación del Grupo */}
+                  <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                          Código de Grupo
+                        </h2>
+                        <p className="text-xs text-zinc-400">Compártelo para comparar marcas juntos</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(GROUP_CODE);
+                          setCopiedCode(true);
+                          setTimeout(() => setCopiedCode(false), 2000);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FA8072] text-zinc-950 text-xs font-black"
+                      >
+                        <Icon name={copiedCode ? "check" : "copy"} className="w-3.5 h-3.5" />
+                        {copiedCode ? "Copiado" : GROUP_CODE}
+                      </button>
+                    </div>
+
+                    {/* Leyenda de miembros */}
+                    <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-zinc-800/80">
+                      {users.map((u, idx) => (
+                        <div key={u} className="flex items-center gap-1.5 text-xs font-bold text-zinc-200">
+                          <span
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: userColors[idx % userColors.length] }}
+                          />
+                          {u}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Introduce código de grupo..."
+                        value={groupCodeInput}
+                        onChange={(e) => setGroupCodeInput(e.target.value)}
+                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#FA8072]"
+                      />
+                      <button
+                        onClick={() => {
+                          if (groupCodeInput.trim()) {
+                            alert(`Conectado al grupo ${groupCodeInput.toUpperCase()}`);
+                            setGroupCodeInput("");
+                          }
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-[#FA8072] hover:text-zinc-950 text-xs font-bold transition-colors"
+                      >
+                        Unirse
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Gráficas Comparativas de Todos los Ejercicios */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400 px-1">
+                      Comparativa de Progresos ({users.length} miembros)
+                    </h3>
+
+                    {ALL_EXERCISES.map(ex => {
+                      const seriesList = users.map((u, idx) => ({
+                        user: u,
+                        data: (logs[u] && logs[u][ex.id]) || [],
+                        color: userColors[idx % userColors.length]
+                      }));
+
+                      return (
+                        <div key={ex.id} className="bg-zinc-900/85 border border-zinc-800 rounded-2xl p-4 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase text-zinc-400">
+                                Rutina {ex.owner} · {ex.dayLabel}
+                              </span>
+                              <h4 className="text-sm font-extrabold text-white">{ex.name}</h4>
+                            </div>
+                          </div>
+
+                          <ProgressChart seriesList={seriesList} unit={ex.unit} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

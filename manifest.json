@@ -1,0 +1,18 @@
+{
+  "name": "PATRI & HOF",
+  "short_name": "PATRI & HOF",
+  "description": "App de entrenamiento y progreso en el gimnasio para Patri y Hof",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
